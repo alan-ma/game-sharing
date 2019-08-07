@@ -10,7 +10,7 @@ type Hub struct {
 	clients map[*Client]bool
 
 	// Inbound messages from clients
-	broadcast chan []byte
+	broadcast chan InputData
 
 	// Register requests from the clients
 	register chan *Client
@@ -19,7 +19,7 @@ type Hub struct {
 	unregister chan *Client
 
 	// Inbound display data from game server
-	displayData chan []byte
+	displayData chan DisplayData
 
 	// new input
 	newInput []byte
@@ -31,17 +31,17 @@ func mockServerReturn(hub *Hub) {
 		case hub.displayData <- hub.newInput:
 		default:
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond) // probably some other way to make a consistent loop
 	}
 }
 
 func newHub() *Hub {
 	newHub := &Hub{
-		broadcast:   make(chan []byte), // TODO: of type InputData
+		broadcast:   make(chan InputData),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		clients:     make(map[*Client]bool),
-		displayData: make(chan []byte),
+		displayData: make(chan DisplayData),
 		newInput:    []byte{'h', 'e', 'l', 'l', 'o', '\n'},
 	}
 	go mockServerReturn(newHub)

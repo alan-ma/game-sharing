@@ -36,8 +36,14 @@ type Client struct {
 	conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan []byte // TODO: of type DisplayDatea
+	send chan DisplayData
 }
+
+// DisplayData is what the players' screen displays
+type DisplayData []byte
+
+// InputData is the format of the players' controls
+type InputData []byte
 
 // readPump pumps messages from the websocket connection to the hub.
 //
@@ -132,7 +138,7 @@ func serveWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new client and register it to the correct hub
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, conn: conn, send: make(chan DisplayData, 256)}
 
 	// TODO: add proper logic to determine the game hub
 	client.hub.register <- client
