@@ -20,6 +20,7 @@ type GameServer interface {
 // GameState holds the information needed by the game
 type GameState interface {
 	GetID() StateID
+	SetID(StateID)
 	GetServerID() GameServerID
 	GetDisplayData() DisplayData
 }

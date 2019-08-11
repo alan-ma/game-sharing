@@ -10,8 +10,12 @@ var addr = flag.String("addr", ":8080", "http service address")
 
 func main() {
 	flag.Parse()
-	hub := newHub()
-	go hub.runGame()
+
+	// Create game servers
+	newGameServer := InitializeNewGameServer(0)
+
+	hub := NewHub(newGameServer)
+	go hub.processIO()
 
 	// Simple file server
 	fileServer := http.FileServer(http.Dir("../public"))

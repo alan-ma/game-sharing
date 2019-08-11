@@ -6,6 +6,12 @@ import (
 
 // Hub represents a live game being played by one or more players
 type Hub struct {
+	// Game server that processes the game state
+	server GameServer
+
+	// The current game state
+	state GameState
+
 	// Registered clients
 	clients map[*Client]bool
 
@@ -22,33 +28,34 @@ type Hub struct {
 	displayData chan DisplayData
 
 	// new input
-	newInput []byte
+	newInput InputData
 }
 
 func mockServerReturn(hub *Hub) {
 	for {
-		select {
-		case hub.displayData <- hub.newInput:
-		default:
-		}
+		hub.server.ProcessState(hub.state, hub.newInput)
+		hub.displayData <- hub.state.GetDisplayData()
+		hub.newInput = nil
 		time.Sleep(10 * time.Millisecond) // probably some other way to make a consistent loop
 	}
 }
 
-func newHub() *Hub {
+// NewHub returns a new Hub for the live game
+func NewHub(server GameServer) *Hub {
 	newHub := &Hub{
+		server:      server,
+		state:       server.NewState(),
 		broadcast:   make(chan InputData),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		clients:     make(map[*Client]bool),
 		displayData: make(chan DisplayData),
-		newInput:    []byte{'h', 'e', 'l', 'l', 'o', '\n'},
 	}
 	go mockServerReturn(newHub)
 	return newHub
 }
 
-func (hub *Hub) runGame() {
+func (hub *Hub) processIO() {
 	for {
 		select {
 		case client := <-hub.register:
@@ -60,9 +67,10 @@ func (hub *Hub) runGame() {
 				delete(hub.clients, client)
 				close(client.send)
 			}
-		case inputData := <-hub.broadcast:
-			// TODO: send inputData and liveGameState to gameServer, get its displayData and gameState
-			hub.newInput = inputData
+		case newInput := <-hub.broadcast:
+			for _, char := range newInput {
+				hub.newInput = append(hub.newInput, char)
+			}
 		case outputData := <-hub.displayData:
 			// Process each client
 			for client := range hub.clients {
