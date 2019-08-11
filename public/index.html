@@ -5,26 +5,27 @@
 <script type="text/javascript">
 window.onload = function () {
     var conn;
-    var msg = document.getElementById("msg");
     var log = document.getElementById("log");
-    function appendLog(item) {
-        var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
-        log.appendChild(item);
-        if (doScroll) {
-            log.scrollTop = log.scrollHeight - log.clientHeight;
-        }
-    }
-    document.addEventListener("keyup", (event) => {
-        const keyName = String.fromCharCode(event.keyCode) + " up";
+    // document.addEventListener("keyup", (event) => {
+    //     const keyName = String.fromCharCode(event.keyCode) + " up";
 
-        if (!conn) {
-            return false;
-        }
+    //     if (!conn) {
+    //         return false;
+    //     }
 
-        conn.send(keyName);
-    });
+    //     conn.send(keyName);
+    // });
+    // document.addEventListener("keydown", (event) => {
+    //     const keyName = String.fromCharCode(event.keyCode) + " down";
+
+    //     if (!conn) {
+    //         return false;
+    //     }
+
+    //     conn.send(keyName);
+    // });
     document.addEventListener("keydown", (event) => {
-        const keyName = String.fromCharCode(event.keyCode) + " down";
+        const keyName = String.fromCharCode(event.keyCode);
 
         if (!conn) {
             return false;
@@ -35,17 +36,18 @@ window.onload = function () {
     if (window["WebSocket"]) {
         conn = new WebSocket("ws://" + document.location.host + "/ws");
         conn.onclose = function (evt) {
-            var item = document.createElement("div");
-            item.innerHTML = "<b>Connection closed.</b>";
-            appendLog(item);
+            log.innerText = "<b>Connection closed.</b>";
         };
         conn.onmessage = function (evt) {
-            var messages = evt.data.split('\n');
-            for (var i = 0; i < messages.length; i++) {
-                var item = document.createElement("div");
-                item.innerText = messages[i];
-                appendLog(item);
+            var displayData = [];
+            for (var i = 0; i < evt.data.length; i++) {
+                if (evt.data[i] == 0) {
+                    displayData.push('□');
+                } else {
+                    displayData.push('■');
+                }
             }
+            log.innerText = displayData.join('');
         };
     } else {
         var item = document.createElement("div");
@@ -76,23 +78,11 @@ body {
     right: 0.5em;
     bottom: 3em;
     overflow: auto;
-}
-#form {
-    padding: 0 0.5em 0 0.5em;
-    margin: 0;
-    position: absolute;
-    bottom: 1em;
-    left: 0px;
-    width: 100%;
-    overflow: hidden;
+    white-space: pre;
 }
 </style>
 </head>
 <body>
 <div id="log"></div>
-<form id="form">
-    <input type="submit" value="Send" />
-    <input type="text" id="msg" size="64"/>
-</form>
 </body>
 </html>
