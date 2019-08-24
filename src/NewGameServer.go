@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 // These are to check that the implementation of interfaces is correct
 // var _ GameServer = (*NewGameServer)(nil)
 // var _ GameState = (*NewGameState)(nil)
@@ -28,6 +32,7 @@ type NewGameState struct {
 	serverID       GameServerID
 	spritePosition int
 	displayData    DisplayData
+	savedDate      time.Time
 }
 
 // ProcessState updates the GameState along with new DisplayData based on InputData
@@ -53,12 +58,12 @@ func (server *NewGameServer) ProcessState(state GameState, inputs InputData) {
 
 // SaveState overwrites the state of the game in the database if it exists, otherwise calls SaveAs
 func (server *NewGameServer) SaveState(state GameState) {
-	server.serverLogic.SaveState(state)
+	go server.serverLogic.SaveState(state)
 }
 
 // SaveAsState saves the state of the game with a new state id
 func (server *NewGameServer) SaveAsState(state GameState) {
-	server.serverLogic.SaveAsState(state)
+	go server.serverLogic.SaveAsState(state)
 }
 
 // LoadState retrieves the GameState from the database
@@ -74,6 +79,7 @@ func (server *NewGameServer) NewState() GameState {
 		serverID:       server.id,
 		spritePosition: 3,
 		displayData:    make([]byte, 8),
+		savedDate:      time.Time{},
 	}
 	return newGameState
 }
@@ -96,4 +102,19 @@ func (state *NewGameState) GetServerID() GameServerID {
 // GetDisplayData returns the current display data for the state
 func (state *NewGameState) GetDisplayData() DisplayData {
 	return state.displayData
+}
+
+// GetSavedDate returns the time the game state was saved
+func (state *NewGameState) GetSavedDate() time.Time {
+	return state.savedDate
+}
+
+// SetSavedDate sets the time the game state was saved
+func (state *NewGameState) SetSavedDate(time time.Time) {
+	state.savedDate = time
+}
+
+// IsLiveSession returns true if the state has not been saved yet (i.e. it is a live session being played)
+func (state *NewGameState) IsLiveSession() bool {
+	return state.savedDate.IsZero()
 }

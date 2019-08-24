@@ -2,6 +2,7 @@ package main
 
 import (
 	"sync"
+	"time"
 )
 
 // GameServer is an interface for the main actions of the game
@@ -23,14 +24,13 @@ type GameState interface {
 	SetID(StateID)
 	GetServerID() GameServerID
 	GetDisplayData() DisplayData
+	GetSavedDate() time.Time
+	SetSavedDate(time.Time)
+	IsLiveSession() bool
 }
 
 // StateID is a generated unique id for each GameState
-type StateID int
-
-func (id *StateID) increment() {
-	*id++
-}
+type StateID = int
 
 // SafeStateID is a StateID safe to use concurrently, prevents race condition
 type SafeStateID struct {
@@ -46,7 +46,7 @@ func (safeStateID *SafeStateID) GetAndIncrementSafeStateID() StateID {
 	// Lock so only one goroutine at a time can access the StateID
 	safeStateID.mux.Lock()
 	newStateID := safeStateID.id
-	safeStateID.id.increment()
+	safeStateID.id++
 	safeStateID.mux.Unlock()
 	return newStateID
 }

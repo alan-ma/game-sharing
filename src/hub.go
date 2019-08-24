@@ -27,15 +27,15 @@ type Hub struct {
 	// Inbound display data from game server
 	displayData chan DisplayData
 
-	// new input
-	newInput InputData
+	// Game input data
+	gameInput InputData
 }
 
 func mockServerReturn(hub *Hub) {
 	for {
-		hub.server.ProcessState(hub.state, hub.newInput)
+		hub.server.ProcessState(hub.state, hub.gameInput)
 		hub.displayData <- hub.state.GetDisplayData()
-		hub.newInput = nil
+		hub.gameInput = nil
 		time.Sleep(10 * time.Millisecond) // probably some other way to make a consistent loop
 	}
 }
@@ -69,7 +69,7 @@ func (hub *Hub) processIO() {
 			}
 		case newInput := <-hub.broadcast:
 			for _, char := range newInput {
-				hub.newInput = append(hub.newInput, char)
+				hub.gameInput = append(hub.gameInput, char)
 			}
 		case outputData := <-hub.displayData:
 			// Process each client

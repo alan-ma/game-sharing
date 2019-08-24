@@ -73,6 +73,7 @@ func (c *Client) readPump() {
 			break
 		}
 
+		// switch statement for game input (g), pause (p), unpause (u), save (s), saveas (a)
 		c.hub.broadcast <- message
 	}
 }
@@ -128,8 +129,8 @@ func (c *Client) writePump() {
 	}
 }
 
-// serveWebSocket handles websocket requests from the peer.
-func serveWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
+// ServeWebSocket handles websocket requests from the peer.
+func ServeWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {

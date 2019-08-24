@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 // ServerLogic provides the shared functionality between game servers
 type ServerLogic struct {
 	newestStateID SafeStateID
@@ -15,6 +19,7 @@ func (server *ServerLogic) SaveState(state GameState) {
 	}
 
 	// Overwrite existing state in database
+	state.SetSavedDate(time.Now())
 	server.savedStates[state.GetID()] = state
 }
 
