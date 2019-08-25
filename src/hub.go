@@ -31,7 +31,7 @@ type Hub struct {
 	gameInput InputData
 }
 
-func mockServerReturn(hub *Hub) {
+func runGameLoop(hub *Hub) {
 	for {
 		hub.server.ProcessState(hub.state, hub.gameInput)
 		hub.displayData <- hub.state.GetDisplayData()
@@ -51,7 +51,23 @@ func NewHub(server GameServer) *Hub {
 		clients:     make(map[*Client]bool),
 		displayData: make(chan DisplayData),
 	}
-	go mockServerReturn(newHub)
+	go runGameLoop(newHub)
+	return newHub
+}
+
+// LoadHub returns a new Hub with a given state
+func LoadHub(server GameServer, stateID StateID) *Hub {
+	loadedState := server.LoadState(stateID)
+	newHub := &Hub{
+		server:      server,
+		state:       loadedState,
+		broadcast:   make(chan InputData),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		clients:     make(map[*Client]bool),
+		displayData: make(chan DisplayData),
+	}
+	go runGameLoop(newHub)
 	return newHub
 }
 

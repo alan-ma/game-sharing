@@ -29,7 +29,7 @@ func main() {
 			Description: "A new game to play!",
 		})
 	GameServerMap = make(map[GameID]GameServer)
-	UserStates = make(map[GameID]map[UserID][]StateID)
+	UserStates = make(map[GameID]map[UserID][]State)
 	Users = make(map[UserID]bool)
 	Hubs = make(map[StateID]*Hub)
 	UserClients = make(map[UserID]*Client)
@@ -38,7 +38,7 @@ func main() {
 		case "0":
 			GameServerMap["0"] = InitializeNewGameServer(0)
 		}
-		UserStates[game.ID] = make(map[UserID][]StateID)
+		UserStates[game.ID] = make(map[UserID][]State)
 	}
 
 	// Initialize router

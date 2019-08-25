@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -22,7 +21,7 @@ func (server *ServerLogic) SaveAsState(stateID StateID) (StateID, time.Time) {
 	// Check that the game state is a live game session
 	// This check should have been completed already
 	if !isLiveGameSession {
-		panic("State ID is not a live game session")
+		panic("State ID is not a live game session.")
 	}
 	state := hub.state
 
@@ -32,31 +31,31 @@ func (server *ServerLogic) SaveAsState(stateID StateID) (StateID, time.Time) {
 	// This new id should not exist in the database
 	_, alreadyInDatabase := server.savedStates[newStateID]
 	if alreadyInDatabase {
-		panic("New state ID already exists")
+		panic("New state ID already exists.")
 	}
 
 	// Save state in database - converts information to json
 	currentTime := time.Now()
-	state.SetSavedDate(currentTime)
-	stateModel, err := json.Marshal(state)
+	stateModel, err := state.MarshalJSON(newStateID, currentTime)
 
 	// There was something wrong with converting the state to json
 	if err != nil {
-		panic("Error saving state")
+		panic("Error saving state.")
 	}
 
 	// Saves the json as a string
-	server.savedStates[state.GetID()] = string(stateModel)
-
-	// Reset saved date for live session
-	state.ResetSavedDate()
+	server.savedStates[newStateID] = string(stateModel)
 
 	return newStateID, currentTime
 }
 
 // LoadState retrieves the GameState from the database
 func (server *ServerLogic) LoadState(stateID StateID) GameState {
-	savedState := server.savedStates[stateID]
+	savedState, ok := server.savedStates[stateID]
+
+	if !ok {
+		panic("State ID not in database.")
+	}
 
 	// Decode json into custom data type
 	// Switch to determine which game state to decode into
@@ -66,8 +65,8 @@ func (server *ServerLogic) LoadState(stateID StateID) GameState {
 		loadedState = &NewGameState{}
 	}
 	err := loadedState.UnmarshalJSON([]byte(savedState))
-	if err == nil {
-		panic("State did not decode correctly")
+	if err != nil {
+		panic("State did not decode correctly.")
 	}
 
 	return loadedState

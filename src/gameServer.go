@@ -31,7 +31,7 @@ type GameState interface {
 	SetSavedDate(time.Time)
 	ResetSavedDate()
 	IsLiveSession() bool
-	MarshalJSON() ([]byte, error)
+	MarshalJSON(StateID, time.Time) ([]byte, error)
 	UnmarshalJSON([]byte) error
 }
 

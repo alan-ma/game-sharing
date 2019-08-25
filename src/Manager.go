@@ -35,7 +35,7 @@ var Games []Game
 var GameServerMap map[GameID]GameServer
 
 // UserStates stores a list of states for each user for a specific game
-var UserStates map[GameID]map[UserID][]StateID
+var UserStates map[GameID]map[UserID][]State
 
 // Users is a set of existing users
 var Users map[UserID]bool
@@ -58,7 +58,7 @@ func errorCheck(w http.ResponseWriter, r *http.Request, gameID GameID, userID Us
 	}
 
 	if _, ok := UserStates[userID]; !ok {
-		UserStates[gameID][userID] = make([]StateID, 0)
+		UserStates[gameID][userID] = make([]State, 0)
 	}
 
 	return true
@@ -84,11 +84,6 @@ func isValidLiveSession(w http.ResponseWriter, r *http.Request, stateID StateID)
 	return true
 }
 
-// IsValidSavedState checks if the state ID is saved in the database
-func isValidSavedState(w http.ResponseWriter, r *http.Request, stateID StateID) bool {
-	return true
-}
-
 // GetGames returns an index of available games
 func GetGames(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -103,15 +98,6 @@ func GetStates(w http.ResponseWriter, r *http.Request) {
 
 	if !errorCheck(w, r, gameID, userID) {
 		return
-	}
-
-	states := make([]State, 0)
-
-	for _, stateID := range UserStates[gameID][userID] {
-		states = append(states, State{
-			ID:      strconv.Itoa(stateID),
-			SavedOn: GameServerMap[gameID].LoadState(stateID).GetSavedDate().String(),
-		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -138,6 +124,9 @@ func CreateState(w http.ResponseWriter, r *http.Request) {
 		SavedOn: hub.state.GetSavedDate().String(),
 	}
 
+	// Adds new state to user's list
+	UserStates[gameID][userID] = append(UserStates[gameID][userID], newState)
+
 	// Start processing I/O on the game hub
 	go hub.processIO()
 
@@ -157,12 +146,32 @@ func LoadState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stateID := getValidStateID(w, r, stateIDStr)
-	if stateID == -1 || !isValidLiveSession(w, r, stateID) {
+	if stateID == -1 {
 		return
 	}
 
+	// Recover in case state ID is not saved in database
+	defer func() {
+		if r := recover(); r != nil {
+			http.Error(w, r.(string), http.StatusNotFound)
+		}
+	}()
+
+	// Create a client and hub to handle the websocket connection
+	hub := LoadHub(GameServerMap[gameID], stateID)
+	Hubs[hub.state.GetID()] = hub
+
+	// Return the state information to the client
+	newState := State{
+		ID:      strconv.Itoa(hub.state.GetID()),
+		SavedOn: hub.state.GetSavedDate().String(),
+	}
+
+	// Start processing I/O on the game hub
+	go hub.processIO()
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(GameServerMap[gameID].GetServerLogic().savedStates[stateID]))
+	json.NewEncoder(w).Encode(newState)
 }
 
 // SaveState saves the live games session as a saved state
@@ -189,6 +198,9 @@ func SaveState(w http.ResponseWriter, r *http.Request) {
 		ID:      strconv.Itoa(newStateID),
 		SavedOn: savedOn.String(),
 	}
+
+	// Adds new state to user's list
+	UserStates[gameID][userID] = append(UserStates[gameID][userID], newState)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newState)

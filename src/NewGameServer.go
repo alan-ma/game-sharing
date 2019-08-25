@@ -133,7 +133,7 @@ func (state *NewGameState) IsLiveSession() bool {
 }
 
 // MarshalJSON returns a json encoded version of NewGameState
-func (state *NewGameState) MarshalJSON() ([]byte, error) {
+func (state *NewGameState) MarshalJSON(newStateID StateID, saveTime time.Time) ([]byte, error) {
 	return json.Marshal(&struct {
 		ID             int       `json:"id"`
 		ServerID       int       `json:"serverID"`
@@ -141,11 +141,11 @@ func (state *NewGameState) MarshalJSON() ([]byte, error) {
 		DisplayData    []byte    `json:"displayData"`
 		SavedDate      time.Time `json:"savedDate"`
 	}{
-		ID:             state.id,
+		ID:             newStateID,
 		ServerID:       state.serverID,
 		SpritePosition: state.spritePosition,
 		DisplayData:    state.displayData,
-		SavedDate:      state.savedDate,
+		SavedDate:      saveTime,
 	})
 }
 
