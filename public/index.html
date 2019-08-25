@@ -34,21 +34,46 @@ window.onload = function () {
         conn.send(keyName);
     });
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/ws");
-        conn.onclose = function (evt) {
-            log.innerText = "<b>Connection closed.</b>";
-        };
-        conn.onmessage = function (evt) {
-            var displayData = [];
-            for (var i = 0; i < evt.data.length; i++) {
-                if (evt.data[i] == 0) {
-                    displayData.push('□');
-                } else {
-                    displayData.push('■');
-                }
+        // Create a request variable and assign a new XMLHttpRequest object to it.
+        var loginRequest = new XMLHttpRequest()
+
+        // Open a new connection, using the GET request on the URL endpoint
+        loginRequest.open('POST', 'http://' + document.location.host + '/login/0', true)
+
+        loginRequest.onload = function () {
+            console.log('login');
+            // Create a request variable and assign a new XMLHttpRequest object to it.
+            var startRequest = new XMLHttpRequest()
+
+            // Open a new connection, using the GET request on the URL endpoint
+            startRequest.open('PUT', 'http://' + document.location.host + '/games/0/0', true)
+            
+            startRequest.onload = function () {
+                var data = JSON.parse(this.response)
+                console.log(data);
+                conn = new WebSocket("ws://localhost:8082/ws/" + data.id);
+                conn.onclose = function (evt) {
+                    log.innerText = "<b>Connection closed.</b>";
+                };
+                conn.onmessage = function (evt) {
+                    var displayData = [];
+                    for (var i = 0; i < evt.data.length; i++) {
+                        if (evt.data[i] == 0) {
+                            displayData.push('□');
+                        } else {
+                            displayData.push('■');
+                        }
+                    }
+                    log.innerText = displayData.join('');
+                };
             }
-            log.innerText = displayData.join('');
-        };
+
+            // Send request
+            startRequest.send();
+        }
+
+        // Send request
+        loginRequest.send();
     } else {
         var item = document.createElement("div");
         item.innerHTML = "<b>Your browser does not support WebSockets.</b>";

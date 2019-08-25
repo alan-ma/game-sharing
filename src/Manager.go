@@ -40,30 +40,41 @@ var UserStates map[GameID]map[UserID][]StateID
 // Users is a set of existing users
 var Users map[UserID]bool
 
+// Hubs is a map of live game sessions
+var Hubs map[StateID]*Hub
+
 // GetGames returns an index of available games
 func GetGames(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Games)
 }
 
-// GetStates returns an index of saved states for a user in a specific game
-func GetStates(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	gameID := params["id"]
-
+func errorCheck(w http.ResponseWriter, r *http.Request, gameID GameID, userID UserID) bool {
 	if _, ok := GameServerMap[gameID]; !ok {
 		http.Error(w, "Game ID does not exist.", http.StatusNotFound)
-		return
+		return false
 	}
 
-	userID := params["userID"]
 	if _, ok := Users[userID]; !ok {
 		http.Error(w, "User ID does not exist.", http.StatusNotFound)
-		return
+		return false
 	}
 
 	if _, ok := UserStates[userID]; !ok {
 		UserStates[gameID][userID] = make([]StateID, 0)
+	}
+
+	return true
+}
+
+// GetStates returns an index of saved states for a user in a specific game
+func GetStates(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	gameID := params["id"]
+	userID := params["userID"]
+
+	if !errorCheck(w, r, gameID, userID) {
+		return
 	}
 
 	states := make([]State, 0)
@@ -79,9 +90,29 @@ func GetStates(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(UserStates[gameID][userID])
 }
 
-// CreateState starts a new game session
+// CreateState starts a new game session and returns the new state ID
 func CreateState(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	gameID := params["id"]
+	userID := params["userID"]
 
+	if !errorCheck(w, r, gameID, userID) {
+		return
+	}
+
+	// Create a client and hub to handle the websocket connection
+	hub := NewHub(GameServerMap[gameID])
+	Hubs[hub.state.GetID()] = hub
+	newState := State{
+		ID:         strconv.Itoa(hub.state.GetID()),
+		LastPlayed: hub.state.GetSavedDate().String(),
+	}
+
+	// Start processing I/O on the game hub
+	go hub.processIO()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newState)
 }
 
 // LoadState loads a saved state as a live game session for a user
@@ -101,5 +132,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if _, ok := Users[userID]; !ok {
 		Users[userID] = true
+		w.WriteHeader(http.StatusCreated)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }

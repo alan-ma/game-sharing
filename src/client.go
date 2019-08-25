@@ -25,6 +25,9 @@ const (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // TODO: Replace with actual origin check!!!
+	},
 }
 
 // Client is a middleman between the websocket connection and the hub
@@ -130,7 +133,7 @@ func (c *Client) writePump() {
 }
 
 // ServeWebSocket handles websocket requests from the peer.
-func ServeWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWebSocket(stateID StateID, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
@@ -138,10 +141,11 @@ func ServeWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hub := Hubs[stateID]
+
 	// Create a new client and register it to the correct hub
 	client := &Client{hub: hub, conn: conn, send: make(chan DisplayData, 256)}
 
-	// TODO: add proper logic to determine the game hub
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
