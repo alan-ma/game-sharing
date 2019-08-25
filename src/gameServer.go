@@ -12,10 +12,13 @@ type GameServer interface {
 	ProcessState(GameState, InputData)
 
 	// Save and load the game state
-	SaveState(GameState)
-	SaveAsState(GameState)
+	SaveAsState(StateID) (StateID, time.Time)
 	LoadState(StateID) GameState
 	NewState() GameState
+	NewStateID() StateID
+
+	// TODO: remove this
+	GetServerLogic() ServerLogic
 }
 
 // GameState holds the information needed by the game
@@ -26,7 +29,10 @@ type GameState interface {
 	GetDisplayData() DisplayData
 	GetSavedDate() time.Time
 	SetSavedDate(time.Time)
+	ResetSavedDate()
 	IsLiveSession() bool
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON([]byte) error
 }
 
 // StateID is a generated unique id for each GameState
@@ -39,7 +45,7 @@ type SafeStateID struct {
 }
 
 // GameServerID is a constant that identifies which game is being played
-type GameServerID int
+type GameServerID = int
 
 // GetAndIncrementSafeStateID returns the current value of the SafeStateID and increments it after
 func (safeStateID *SafeStateID) GetAndIncrementSafeStateID() StateID {

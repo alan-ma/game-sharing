@@ -43,10 +43,10 @@ type Client struct {
 }
 
 // DisplayData is what the players' screen displays
-type DisplayData []byte
+type DisplayData = []byte
 
 // InputData is the format of the players' controls
-type InputData []byte
+type InputData = []byte
 
 // readPump pumps messages from the websocket connection to the hub.
 //
@@ -133,7 +133,7 @@ func (c *Client) writePump() {
 }
 
 // ServeWebSocket handles websocket requests from the peer.
-func ServeWebSocket(stateID StateID, w http.ResponseWriter, r *http.Request) {
+func ServeWebSocket(userID UserID, stateID StateID, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
@@ -141,11 +141,19 @@ func ServeWebSocket(stateID StateID, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hub := Hubs[stateID]
+	// Unregister the user from existing hubs
+	client, existingUser := UserClients[userID]
 
-	// Create a new client and register it to the correct hub
-	client := &Client{hub: hub, conn: conn, send: make(chan DisplayData, 256)}
+	if existingUser {
+		client.hub.unregister <- client
+	} else {
+		// Create a new client
+		hub := Hubs[stateID]
+		client = &Client{hub: hub, conn: conn, send: make(chan DisplayData, 256)}
+	}
 
+	// Register client to the correct hub
+	UserClients[userID] = client
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

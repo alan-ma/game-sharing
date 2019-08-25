@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -33,6 +32,7 @@ func main() {
 	UserStates = make(map[GameID]map[UserID][]StateID)
 	Users = make(map[UserID]bool)
 	Hubs = make(map[StateID]*Hub)
+	UserClients = make(map[UserID]*Client)
 	for _, game := range Games {
 		switch game.ID {
 		case "0":
@@ -53,19 +53,12 @@ func main() {
 	MainRouter.HandleFunc("/games", GetGames).Methods("GET")
 	MainRouter.HandleFunc("/games/{id}/{userID}", GetStates).Methods("GET")
 	MainRouter.HandleFunc("/games/{id}/{userID}", CreateState).Methods("PUT")
-	MainRouter.HandleFunc("/games/{id}/{userID}/{StateID}", LoadState).Methods("GET")
-	MainRouter.HandleFunc("/games/{id}/{userID}", SaveState).Methods("POST")
+	MainRouter.HandleFunc("/games/{id}/{userID}/{stateID}", LoadState).Methods("GET")
+	MainRouter.HandleFunc("/games/{id}/{userID}/{stateID}", SaveState).Methods("PUT")
 	MainRouter.HandleFunc("/login/{id}", Login).Methods("POST")
 
 	// Configure websocket route
-	WSRouter.HandleFunc("/ws/{id}", func(w http.ResponseWriter, r *http.Request) {
-		params := mux.Vars(r)
-		stateID, err := strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(w, "State ID is not a valid live game session.", http.StatusNotFound)
-		}
-		ServeWebSocket(stateID, w, r)
-	})
+	WSRouter.HandleFunc("/play/{id}/{userID}/{stateID}", HandleWebSocket)
 
 	// Start the server using the address specified and log errors
 	log.Println("http server stated on", *addr)

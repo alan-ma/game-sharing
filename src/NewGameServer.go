@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -14,13 +15,19 @@ type NewGameServer struct {
 	serverLogic ServerLogic
 }
 
+// TODO: remove this
+func (server *NewGameServer) GetServerLogic() ServerLogic {
+	return server.serverLogic
+}
+
 // InitializeNewGameServer starts the game server
 func InitializeNewGameServer(id GameServerID) GameServer {
 	newServer := &NewGameServer{
 		id: id,
 		serverLogic: ServerLogic{
+			"0", // This is the hard-coded game ID
 			SafeStateID{id: 0},
-			make(map[StateID]GameState),
+			make(map[StateID]SavedState),
 		},
 	}
 	return newServer
@@ -56,14 +63,9 @@ func (server *NewGameServer) ProcessState(state GameState, inputs InputData) {
 	newState.displayData[newState.spritePosition] = 49
 }
 
-// SaveState overwrites the state of the game in the database if it exists, otherwise calls SaveAs
-func (server *NewGameServer) SaveState(state GameState) {
-	go server.serverLogic.SaveState(state)
-}
-
 // SaveAsState saves the state of the game with a new state id
-func (server *NewGameServer) SaveAsState(state GameState) {
-	go server.serverLogic.SaveAsState(state)
+func (server *NewGameServer) SaveAsState(stateID StateID) (StateID, time.Time) {
+	return server.serverLogic.SaveAsState(stateID)
 }
 
 // LoadState retrieves the GameState from the database
@@ -82,6 +84,12 @@ func (server *NewGameServer) NewState() GameState {
 		savedDate:      time.Time{},
 	}
 	return newGameState
+}
+
+// NewStateID returns the latest state ID
+func (server *NewGameServer) NewStateID() StateID {
+	newStateID := server.serverLogic.newestStateID.GetAndIncrementSafeStateID()
+	return newStateID
 }
 
 // GetID returns the StateID used to access the state
@@ -114,7 +122,56 @@ func (state *NewGameState) SetSavedDate(time time.Time) {
 	state.savedDate = time
 }
 
+// ResetSavedDate sets the time the game state was saved to zero
+func (state *NewGameState) ResetSavedDate() {
+	state.savedDate = time.Time{}
+}
+
 // IsLiveSession returns true if the state has not been saved yet (i.e. it is a live session being played)
 func (state *NewGameState) IsLiveSession() bool {
 	return state.savedDate.IsZero()
+}
+
+// MarshalJSON returns a json encoded version of NewGameState
+func (state *NewGameState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ID             int       `json:"id"`
+		ServerID       int       `json:"serverID"`
+		SpritePosition int       `json:"spritePosition"`
+		DisplayData    []byte    `json:"displayData"`
+		SavedDate      time.Time `json:"savedDate"`
+	}{
+		ID:             state.id,
+		ServerID:       state.serverID,
+		SpritePosition: state.spritePosition,
+		DisplayData:    state.displayData,
+		SavedDate:      state.savedDate,
+	})
+}
+
+// UnmarshalJSON returns a decoded NewGameState
+func (state *NewGameState) UnmarshalJSON(data []byte) error {
+	aux := &struct {
+		ID             int       `json:"id"`
+		ServerID       int       `json:"serverID"`
+		SpritePosition int       `json:"spritePosition"`
+		DisplayData    []byte    `json:"displayData"`
+		SavedDate      time.Time `json:"savedDate"`
+	}{
+		ID:             state.id,
+		ServerID:       state.serverID,
+		SpritePosition: state.spritePosition,
+		DisplayData:    state.displayData,
+		SavedDate:      state.savedDate,
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	state.id = aux.ID
+	state.serverID = aux.ServerID
+	state.spritePosition = aux.SpritePosition
+	state.displayData = aux.DisplayData
+	state.savedDate = aux.SavedDate
+
+	return nil
 }
