@@ -34,9 +34,6 @@ var Games []Game
 // GameServerMap maps each game ID to its respective server
 var GameServerMap map[GameID]GameServer
 
-// UserStates stores a list of states for each user for a specific game
-var UserStates map[GameID]map[UserID][]State
-
 // Users is a set of existing users
 var Users map[UserID]bool
 
@@ -55,10 +52,6 @@ func errorCheck(w http.ResponseWriter, r *http.Request, gameID GameID, userID Us
 	if _, ok := Users[userID]; !ok {
 		http.Error(w, "User ID does not exist.", http.StatusNotFound)
 		return false
-	}
-
-	if _, ok := UserStates[userID]; !ok {
-		UserStates[gameID][userID] = make([]State, 0)
 	}
 
 	return true
@@ -100,8 +93,14 @@ func GetStates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userStates, err := GetUserStates(gameID, userID)
+
+	if err != nil {
+		http.Error(w, "Database error encountered while reading saved states.", http.StatusInternalServerError)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(UserStates[gameID][userID])
+	w.Write([]byte(userStates))
 }
 
 // CreateState starts a new game session and returns the new state ID
@@ -119,13 +118,13 @@ func CreateState(w http.ResponseWriter, r *http.Request) {
 	Hubs[hub.state.GetID()] = hub
 
 	// Return the state information to the client
-	newState := State{
+	newState := &State{
 		ID:      strconv.Itoa(hub.state.GetID()),
 		SavedOn: hub.state.GetSavedDate().String(),
 	}
 
 	// Adds new state to user's list
-	UserStates[gameID][userID] = append(UserStates[gameID][userID], newState)
+	AddToUserStates(gameID, userID, newState)
 
 	// Start processing I/O on the game hub
 	go hub.processIO()
@@ -194,13 +193,13 @@ func SaveState(w http.ResponseWriter, r *http.Request) {
 	newStateID, savedOn := GameServerMap[gameID].SaveAsState(stateID)
 
 	// Return the state information to the client
-	newState := State{
+	newState := &State{
 		ID:      strconv.Itoa(newStateID),
 		SavedOn: savedOn.String(),
 	}
 
 	// Adds new state to user's list
-	UserStates[gameID][userID] = append(UserStates[gameID][userID], newState)
+	AddToUserStates(gameID, userID, newState)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newState)
