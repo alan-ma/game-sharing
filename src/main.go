@@ -23,28 +23,6 @@ var WSRouter *mux.Router
 // DatabasePool is the pool of connections to Redis
 var DatabasePool *redis.Pool
 
-// ping tests connectivity for redis (PONG should be returned)
-func ping(c redis.Conn) error {
-	// Send PING command to Redis
-	pong, err := c.Do("PING")
-	if err != nil {
-		log.Println("FSDLKJFLSFJ")
-		return err
-	}
-
-	// PING command returns a Redis "Simple String"
-	// Use redis.String to convert the interface type to string
-	s, err := redis.String(pong, err)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("PING Response = %s\n", s)
-	// Output: PONG
-
-	return nil
-}
-
 func main() {
 	flag.Parse()
 
@@ -53,11 +31,10 @@ func main() {
 	log.Println("Redis server stated on", *redisAddr)
 
 	conn := DatabasePool.Get()
-	log.Println(conn.Err())
 	defer conn.Close()
-	derr := ping(conn)
-	if derr != nil {
-		fmt.Println(derr)
+	databaseErr := Ping(conn)
+	if databaseErr != nil {
+		fmt.Println(databaseErr)
 	}
 
 	// Initialize games, users, and game servers

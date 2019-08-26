@@ -22,12 +22,6 @@ type Game struct {
 	Description string `json:"description"`
 }
 
-// State is the model for state information
-type State struct {
-	ID      string `json:"id"`
-	SavedOn string `json:"savedOn"`
-}
-
 // Games stores a list of the available games to play
 var Games []Game
 
@@ -120,7 +114,7 @@ func CreateState(w http.ResponseWriter, r *http.Request) {
 	// Return the state information to the client
 	newState := &State{
 		ID:      strconv.Itoa(hub.state.GetID()),
-		SavedOn: hub.state.GetSavedDate().String(),
+		SavedOn: hub.state.GetSavedDate(),
 	}
 
 	// Adds new state to user's list
@@ -163,7 +157,7 @@ func LoadState(w http.ResponseWriter, r *http.Request) {
 	// Return the state information to the client
 	newState := State{
 		ID:      strconv.Itoa(hub.state.GetID()),
-		SavedOn: hub.state.GetSavedDate().String(),
+		SavedOn: hub.state.GetSavedDate(),
 	}
 
 	// Start processing I/O on the game hub
@@ -195,7 +189,7 @@ func SaveState(w http.ResponseWriter, r *http.Request) {
 	// Return the state information to the client
 	newState := &State{
 		ID:      strconv.Itoa(newStateID),
-		SavedOn: savedOn.String(),
+		SavedOn: savedOn,
 	}
 
 	// Adds new state to user's list

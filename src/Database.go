@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -20,6 +22,33 @@ func NewPool(addr string) *redis.Pool {
 	}
 }
 
+// Ping tests connectivity for redis (PONG should be returned)
+func Ping(c redis.Conn) error {
+	// Send PING command to Redis
+	pong, err := c.Do("PING")
+	if err != nil {
+		return err
+	}
+
+	// PING command returns a Redis "Simple String"
+	// Use redis.String to convert the interface type to string
+	s, err := redis.String(pong, err)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("PING Response = %s\n", s)
+	// Output: PONG
+
+	return nil
+}
+
+// State is the model for state information
+type State struct {
+	ID      string    `json:"id"`
+	SavedOn time.Time `json:"savedOn"`
+}
+
 func getUserStatesObjectPrefix(gameID GameID, userID UserID) string {
 	return "table: UserStates, gameID: " + gameID + ", userID: " + userID
 }
@@ -33,8 +62,9 @@ func AddToUserStates(gameID GameID, userID UserID, newState *State) error {
 
 	// Read value from database
 	storedValue, readErr := redis.String(conn.Do("GET", key))
-	if readErr != nil && readErr != redis.ErrNil {
-		// If saved states do not exist, it is empty
+	if readErr == redis.ErrNil {
+		storedValue = "[]"
+	} else if readErr != nil {
 		return readErr
 	}
 
