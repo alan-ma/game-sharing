@@ -30,6 +30,7 @@ func main() {
 	DatabasePool = NewPool(*redisAddr)
 	log.Println("Redis server stated on", *redisAddr)
 
+	// Test Redis connection
 	conn := DatabasePool.Get()
 	defer conn.Close()
 	databaseErr := Ping(conn)
