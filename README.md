@@ -1,9 +1,9 @@
 # Game Sharing Service
 This is a proof-of-concept game streaming platform that allows players to jump into different games without any client-side processing. Since all game information is stored in the server, players can share the exact state of their play-through with other users, allowing anyone to experience games from the same moment.
 
-I was inspired by [Stadia](https://stadia.dev), envisioning a future where content creators can share what they are playing in a video or livestream, and let viewers experience it too! I think that another advantage of the game streaming model is that it allows for open-world MMORPGs of an extremely large scale.
+I was inspired by [Stadia](https://stadia.dev), envisioning a future where content creators can share what they are playing in a video or livestream, and let viewers experience it too! I also think that the game streaming model allows for open-world MMORPGs of an extremely large scale, and built this platform with a pub/sub pattern in hopes of achieving this.
 
-This project is still in the works! As of now, the skeleton of the backend service is in place, using RESTful APIs and WebSocket to communicate with clients. I am currently wrapping up integration with a Redis database, and am planning on creating a simple frontend UI to demo the service!
+This project is still in the works! As of now, the skeleton of the backend service is in place, using RESTful APIs and WebSocket to communicate with clients. I am currently wrapping up integration with a Redis database, and am planning on creating a user interface to demo the platform!
 
 ## Architecture
 ![Architecture diagram](Architecture.png)
@@ -40,17 +40,21 @@ I chose [Redis](https://redis.io) as a database because of its quick speed and s
 ### [GET] `/games`
 *Description: Returns an index of available games to play.*
 
-Response Class (Status 200)
-
 Example of a successful response:
 
 ```
-{
+HTTP/1.1 200 OK
+Content-Type: application/json
 
-}
+[
+    {
+        "id": "string",
+        "imageID": "string",
+        "name": "string",
+        "description": "string"
+    }
+]
 ```
-
-Response Content Type: `application/json`
 
 ### [GET] `/games/{id}/{userID}`
 *Description: Returns a user's saved states for a particular game.*
@@ -61,9 +65,12 @@ Example of a successful response:
 HTTP/1.1 200 OK
 Content-Type: application/json
 
-{
-
-}
+[
+    {
+        "id": "string",
+        "savedOn": "DateTime"
+    }
+]
 ```
 
 Parameters:
@@ -73,15 +80,91 @@ id | String | The game's unique identifier
 userID | String | The user's unique identifier
 
 ### [PUT] `/games/{id}/{userID}`
+*Description: Begins a new instance of the game for a certain user, returning the identifier of the game state for the user to then load.*
 
+Example of a successful response:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "string",
+    "savedOn": "DateTime"
+}
+```
+
+Parameters:
+Path | Type | Description
+--- | --- | ---
+id | String | The game's unique identifier
+userID | String | The user's unique identifier
 
 
 ### [GET] `/games/{id}/{userID}/{stateID}`
+*Description: Loads an instance of a game from an existing saved state, returning the identifier of the game state for the user to then load.*
 
+Example of a successful response:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "string",
+    "savedOn": "DateTime"
+}
+```
+
+Parameters:
+Path | Type | Description
+--- | --- | ---
+id | String | The game's unique identifier
+userID | String | The user's unique identifier
+stateID | String | The unique identifier of the saved game
 
 ### [PUT] `/games/{id}/{userID}/{stateID}`
+*Description: Saves the current gameplay state under a new identifier, which is then returned.*
+
+Example of a successful response:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "string",
+    "savedOn": "DateTime"
+}
+```
+
+Parameters:
+Path | Type | Description
+--- | --- | ---
+id | String | The game's unique identifier
+userID | String | The user's unique identifier
+stateID | String | The unique identifier of the saved game
 
 ### [POST] `/login/{id}`
+**Note that authentication is still WIP and thie endpoint will change in the future.**  
+*Description: If the user identifier does not exist, it creates a new user with that ID.*
+
+Example of a successful response for a new user:
+
+```
+HTTP/1.1 201 Created
+```
+
+Example of a successful response for existing users:
+
+```
+HTTP/1.1 200 OK
+```
+
+Parameters:
+Path | Type | Description
+--- | --- | ---
+id | String | The user's unique identifier, can either be existing or new
 
 
 

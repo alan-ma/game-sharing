@@ -36,7 +36,7 @@ func (server *ServerLogic) SaveAsState(stateID StateID) (StateID, time.Time) {
 
 	// Save state in database - converts information to json
 	currentTime := time.Now()
-	stateModel, err := state.MarshalJSON(newStateID, currentTime)
+	stateModel, err := state.MarshalJSONCustom(newStateID, currentTime)
 
 	// There was something wrong with converting the state to json
 	if err != nil {

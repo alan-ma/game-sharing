@@ -17,7 +17,7 @@ type UserID = string
 // Game is the model for game information
 type Game struct {
 	ID          GameID `json:"id"`
-	ImageNumber string `json:"imageNumber"`
+	ImageNumber string `json:"imageID"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }

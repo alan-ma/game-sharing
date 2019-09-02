@@ -15,11 +15,6 @@ type NewGameServer struct {
 	serverLogic ServerLogic
 }
 
-// TODO: remove this
-func (server *NewGameServer) GetServerLogic() ServerLogic {
-	return server.serverLogic
-}
-
 // InitializeNewGameServer starts the game server
 func InitializeNewGameServer(id GameServerID) GameServer {
 	newServer := &NewGameServer{
@@ -132,8 +127,8 @@ func (state *NewGameState) IsLiveSession() bool {
 	return state.savedDate.IsZero()
 }
 
-// MarshalJSON returns a json encoded version of NewGameState
-func (state *NewGameState) MarshalJSON(newStateID StateID, saveTime time.Time) ([]byte, error) {
+// MarshalJSONCustom returns a json encoded version of NewGameState
+func (state *NewGameState) MarshalJSONCustom(newStateID StateID, saveTime time.Time) ([]byte, error) {
 	return json.Marshal(&struct {
 		ID             int       `json:"id"`
 		ServerID       int       `json:"serverID"`

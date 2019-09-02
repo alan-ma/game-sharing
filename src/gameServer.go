@@ -16,9 +16,6 @@ type GameServer interface {
 	LoadState(StateID) GameState
 	NewState() GameState
 	NewStateID() StateID
-
-	// TODO: remove this
-	GetServerLogic() ServerLogic
 }
 
 // GameState holds the information needed by the game
@@ -31,7 +28,7 @@ type GameState interface {
 	SetSavedDate(time.Time)
 	ResetSavedDate()
 	IsLiveSession() bool
-	MarshalJSON(StateID, time.Time) ([]byte, error)
+	MarshalJSONCustom(StateID, time.Time) ([]byte, error)
 	UnmarshalJSON([]byte) error
 }
 
